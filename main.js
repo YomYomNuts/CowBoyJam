@@ -1,6 +1,26 @@
-var http = require('http');
-http.createServer(function (req, res) {
-  res.writeHead(200, {'Content-Type': 'text/plain'});
-  res.end('Hello World\n');
-}).listen(1337, '127.0.0.1');
-console.log('Server running at http://127.0.0.1:1337/');
+var app = require('express')();
+var http = require('http').Server(app);
+var io = require('socket.io')(http);
+
+app.get('/', function(req, res) {
+  res.sendFile(__dirname + '/index.html');
+});
+
+io.on('connection', function(socket) {
+  console.log('a user connected');
+  socket.on('disconnect', function() {
+    console.log('user disconnected');
+  });
+  socket.on('chat message', function(msg) {
+    console.log('chat message ' + msg);
+    io.emit('chat message', msg);
+  });
+  socket.on('mouse event', function(id) {
+    console.log('mouse event ' + id);
+    io.emit('mouse event', id);
+  });
+});
+
+http.listen(3000, function() {
+  console.log('listening on *:3000');
+});
