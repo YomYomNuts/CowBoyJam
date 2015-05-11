@@ -1,9 +1,13 @@
 {
-  "name": "socket-cowboy",
+  "name": "foiejaune",
+  "description": "Game made during the Grande Confiture de Jeux 2015",
   "version": "0.0.1",
-  "description": "CowBoy Jam",
+  "scripts" : {
+    "start" : "node ./server.js"
+  },
   "dependencies": {
     "express": "^4.12.3",
     "socket.io": "^1.3.5"
   }
 }
+ 
