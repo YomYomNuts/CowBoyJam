@@ -4,7 +4,7 @@ var http = require('http').Server(app);
 var io = require('socket.io')(http);
 
 http.listen(process.env.PORT || 3000, function() {
-  console.log('listening on *:' + env.PORT);
+  console.log('listening on *:' + process.env.PORT + ' or *:3000');
 });
 
 app.use(express.static('client'));

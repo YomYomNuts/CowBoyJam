@@ -23,7 +23,7 @@
 
 			// create an new instance of a pixi stage
 		    var stage = new PIXI.Container();
-		    var renderer = PIXI.autoDetectRenderer($(document.body).width(), $(document.body).height(),{backgroundColor : 0xFFFF99});
+		    var renderer = PIXI.autoDetectRenderer(window.innerWidth, window.innerHeight, { backgroundColor : 0xFFFF99 } );
 		    renderer.view.id = "renderer";
 		    var gameContainer = new PIXI.Container();
 			stage.addChild(gameContainer);
@@ -71,13 +71,34 @@
 			function animate() {
 			    renderer.render(stage);
 			    requestAnimationFrame(animate);
+				// force resize
+				if(window.innerWidth !== w || window.innerHeight !== h)
+					resize();
 			}
+
 			window.requestAnimFrame = (function(callback) {
 				return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame ||
 				function(callback) {
 					window.setTimeout(callback, 1000 / 60);
 				};
 			})();
+
+			var w = window.innerWidth;
+			var h = window.innerHeight;
+			function resize() {
+				w = window.innerWidth;
+				h = window.innerHeight;
+				renderer.resize(w, h);
+				stage.filterArea = new PIXI.math.Rectangle(0, 0, w, h);
+				var scale = Math.min(w/DEFAULT_W, h/DEFAULT_H);
+				stage.scale.x = stage.scale.y = scale;
+				stage.position.x = w/2;
+				stage.position.y = h/2;
+			}
+			resize();
+			window.onresize = function(e) {
+				resize();
+			}
 
 		    // state : [0=head], [1=stay], [2=dead], [3=missSquat], [4=squat], [5=deadRight], [6=fireRight], [7=deadLeft], [8=fireLeft]
 			function setUser(idUser, nbUsers, state) {
@@ -91,9 +112,9 @@
 			    user.tint = 0xffffff;
 			    user.alpha = 1;
 			    user.scale = new PIXI.Point(0.5, 0.5);
-			    var widthByUser = $(document.body).width() / (nbUsers + 1);
+			    var widthByUser = w / (nbUsers + 1);
 			    user.position.x = widthByUser * idUser;
-			    user.position.y = $(document.body).height() * 0.5;
+			    user.position.y = h * 0.5;
 			    users[idUser] = user;
 			    gameContainer.addChild(user);
 		    }
@@ -111,8 +132,8 @@
 			    user.tint = 0xffffff;
 			    user.alpha = 1;
 			    user.scale = new PIXI.Point(0.5, 0.5);
-			    user.position.x = $(document.body).width() * 0.8;
-			    user.position.y = $(document.body).height() * 0.1;
+			    user.position.x = w * 0.8;
+			    user.position.y = h * 0.1;
 			    sherif = user;
 			    gameContainer.addChild(user);
 		    }
@@ -129,8 +150,8 @@
 			    user.tint = 0xffffff;
 			    user.alpha = 1;
 			    user.scale = new PIXI.Point(0.5, 0.5);
-			    user.position.x = $(document.body).width() * 0.8;
-			    user.position.y = $(document.body).height() * 0.1;
+			    user.position.x = w * 0.8;
+			    user.position.y = h * 0.1;
 			    head = user;
 			    gameContainer.addChild(user);
 		    }
@@ -185,7 +206,7 @@
 		    function winner(idUser, nbUsers) {
 			    var widthByUser = $(document.body).width() / (nbUsers + 1);
 			    light1.position.x = widthByUser * idUser - 387 / 4;
-			    light1.position.y = $(document.body).height() * 0.5 - 388 / 4;
+			    light1.position.y = h * 0.5 - 388 / 4;
 				gameContainer.addChild(light1);
 				setUser(idUser, nbUsers, 1);
 		    }
