@@ -1,43 +1,68 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>CowBoyJam</title>
+		<title>FoieJaune</title>
 		<meta charset="UTF-8">
+		<link rel="icon" type="image/png" href="logo.png" />
 		<script src="socket.io-1.3.5.js"></script>
 		<script src="jquery-2.1.4.min.js"></script>
 		<script src="pixi.min.js"></script>
 		<link href="style.css" rel="stylesheet" media="all" type="text/css"> 
 	</head>
 	<body>
-		<input id="idRoom" type="hidden" value=""/>
-		<input id="idUser" type="hidden" value=""/>
-		<input id="nbUsers" type="hidden" value=""/>
+		<input id="idUser" type="hidden" value="-1"/>
+		<input id="nbUsers" type="hidden" value="-1"/>
 		<script>
+			function playShoot() {
+				var idShoot = Math.floor(Math.random() + 1);
+				var myAudio = new Audio('Snd_Shoot' + idShoot +'.wav'); 
+				myAudio.play();
+			}
+
 			// launch the socket
 			var socket = io();
+			var renderLine = false;
 			var users = [null, null, null, null, null, null, null, null, null, null];
+			var stateUsers = [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1];
 			var sherif = null;
 			var currentStateSherif = 0;
 			var head = null;
-			var currentIdHead = 0;
+			var currentIdHead = -1;
+			var idWinner = -1;
+			var w = window.innerWidth;
+			var h = window.innerHeight;
+			var DEFAULT_W = 1024;
+			var DEFAULT_H = 720;
+			var heightPosition = h * 0.5;
+			var heightArrow = h * 0.7;
+			var sizeCircle = Math.min(w/3.5, h/3.5);
+			var sizeCircleArrow = Math.min(w/2.5, h/2.5);
+			var partyRunning = false;
+			var valueTimer = 5; // maxTimeWaiting dans server.js
 
 			// create an new instance of a pixi stage
 		    var stage = new PIXI.Container();
-		    var renderer = PIXI.autoDetectRenderer(window.innerWidth, window.innerHeight, { backgroundColor : 0xFFFF99 } );
+		    var renderer = PIXI.autoDetectRenderer(w, h, { backgroundColor : 0xFFFF99 } );
 		    renderer.view.id = "renderer";
 		    var gameContainer = new PIXI.Container();
 			stage.addChild(gameContainer);
 		    document.body.appendChild(renderer.view);
 			var light1 = PIXI.Sprite.fromImage('LightRotate1.png');
+	    	light1.anchor.set(0.5);
 			var cactus1 = PIXI.Sprite.fromImage('Cactus1.png');
-		    cactus1.position.x = $(document.body).width() / 4;
-		    cactus1.position.y = $(document.body).height() * 3 / 4;
+	    	cactus1.anchor.set(0.5);
+		    cactus1.position.x = w / 4;
+		    cactus1.position.y = h * 3 / 4;
 			var cactus2 = PIXI.Sprite.fromImage('Cactus2.png');
-		    cactus2.position.x = $(document.body).width() * 3 / 4;
-		    cactus2.position.y = $(document.body).height() * 3 / 4;
+	    	cactus2.anchor.set(0.5);
+		    cactus2.position.x = w * 3 / 4;
+		    cactus2.position.y = h * 3 / 4;
 			var cactus3 = PIXI.Sprite.fromImage('Cactus2.png');
-		    cactus3.position.x = $(document.body).width() * 2.5 / 4;
-		    cactus3.position.y = $(document.body).height() * 0.1 / 4;
+	    	cactus3.anchor.set(0.5);
+		    cactus3.position.x = w * 2.5 / 4;
+		    cactus3.position.y = h * 0.7 / 4;
+			var arrow = PIXI.Sprite.fromImage('Arrow.png');
+	    	arrow.anchor.set(0.5);
 
 		    // importing a texture atlas created with texturepacker
 			var maxUsers = 10;
@@ -47,23 +72,29 @@
 				.add("images.json")
 				.once('complete', function() {
 			    	assetsReadyFlag = true;
-			    	console.log('load complete');
 					socket.emit('addUser');
+					var myAudio = new Audio('Snd_Music.wav'); 
+					myAudio.addEventListener('ended', function() {
+					    this.currentTime = 0;
+					    this.play();
+					}, false);
+					myAudio.play();
 				})
 				.load();
 
 			// Text
-	    	var infos = new PIXI.Text("F5 : New Game\nRigth Arrow : Right Shoot\nLeft Arrow : Left Shoot\nDown Arrow : Dodge Shoot", {font: "bold 30px Podkova", fill: "#cc00ff", align: "center", stroke: "#FFFFFF", strokeThickness: 6});
-		    infos.position.x = 10;
-		    infos.position.y = 10;
-	    	var timerText = new PIXI.Text("0", {font: "bold 60px Podkova", fill: "#cc00ff", align: "center", stroke: "#FFFFFF", strokeThickness: 6});
-	    	timerText.anchor.set(0.5);
-		    timerText.position.x = $(document.body).width() / 2;
-		    timerText.position.y = $(document.body).height() / 4;
-	    	var timerWaitingPlayersText = new PIXI.Text("Waiting Players 10s", {font: "bold 40px Podkova", fill: "#cc00ff", align: "center", stroke: "#FFFFFF", strokeThickness: 6}); // maxTimeWaiting dans main.js
+	    	var infos = new PIXI.Text("F5 : New Game\nRigth Arrow : Right Shoot\nLeft Arrow : Left Shoot\nDown Arrow : Dodge Shoot", {font: "bold 20px Podkova", fill: "#cc00ff", align: "center", stroke: "#FFFFFF", strokeThickness: 6});
+	    	infos.anchor.set(0.5);
+		    infos.position.x = w * 0.1;
+		    infos.position.y = h * 0.1;
+	    	var timerWaiting = new PIXI.Text("Waiting Players", {font: "bold 25px Podkova", fill: "#cc00ff", align: "center", stroke: "#FFFFFF", strokeThickness: 6});
+	    	timerWaiting.anchor.set(0.5);
+		    timerWaiting.position.x = w * 0.1;
+		    timerWaiting.position.y = h * 0.2;
+	    	var timerWaitingPlayersText = new PIXI.Text("Game start in 5s", {font: "bold 25px Podkova", fill: "#cc00ff", align: "center", stroke: "#FFFFFF", strokeThickness: 6});
 	    	timerWaitingPlayersText.anchor.set(0.5);
-		    timerWaitingPlayersText.position.x = $(document.body).width() / 2;
-		    timerWaitingPlayersText.position.y = $(document.body).height() / 8;
+		    timerWaitingPlayersText.position.x = w * 0.1;
+		    timerWaitingPlayersText.position.y = h * 0.3;
 		    timerWaitingPlayersText.isDisplaying = false;
 
 			//update renderer
@@ -83,8 +114,6 @@
 				};
 			})();
 
-			var w = window.innerWidth;
-			var h = window.innerHeight;
 			function resize() {
 				w = window.innerWidth;
 				h = window.innerHeight;
@@ -92,13 +121,60 @@
 				stage.filterArea = new PIXI.math.Rectangle(0, 0, w, h);
 				var scale = Math.min(w/DEFAULT_W, h/DEFAULT_H);
 				stage.scale.x = stage.scale.y = scale;
-				stage.position.x = w/2;
-				stage.position.y = h/2;
+				stage.position.x = 0;
+				stage.position.y = 0;
+
+				heightPosition = h * 0.5;
+				heightArrow = h * 0.7;
+				sizeCircle = Math.min(w/3.5, h/3.5);
+				sizeCircleArrow = Math.min(w/2.5, h/2.5);
+
+ 				if (assetsReadyFlag) {
+					resetUsers(parseInt($('#nbUsers').val()));
+					setSherif(currentStateSherif);
+					if (currentIdHead != -1) {
+						addHead(currentIdHead);
+					}
+					if (idWinner != -1) {
+						winner(idWinner, parseInt($('#nbUsers').val()));
+					}
+					if (partyRunning) {
+						partyIsRunning();
+					} else if (timerWaitingPlayersText.isDisplaying) {
+						timerWaitingPlayersInfos(valueTimer);
+						gameContainer.addChild(timerWaitingPlayersText);
+					}
+				}
 			}
 			resize();
 			window.onresize = function(e) {
 				resize();
 			}
+			window.onload = function(e) {
+				resize();
+			}
+
+		    function positionLine(nbUsers, idUser, sprite, parHeight) {
+			    var widthByUser = w / (nbUsers + 1);
+			    sprite.position.x = widthByUser * (idUser + 0.5);
+			    sprite.position.y = parHeight;
+		    }
+
+		    function positionCircle(nbUsers, idUser, sprite, parSizeCircle) {
+			    var angleByUser = (Math.PI * 2) / nbUsers;
+			    sprite.position.x = Math.sin(angleByUser * idUser) * parSizeCircle + w/2;
+			    sprite.position.y = -Math.cos(angleByUser * idUser) * parSizeCircle + h/2;
+			    sprite.rotation = angleByUser * idUser;
+		    }
+
+		    function setMe(idUser, nbUsers) {
+			    if (renderLine) {
+			    	positionLine(nbUsers, idUser, arrow, heightArrow);
+				} else {
+			    	positionCircle(nbUsers, idUser, arrow, sizeCircleArrow);
+				}
+				gameContainer.addChild(arrow);
+		    }
 
 		    // state : [0=head], [1=stay], [2=dead], [3=missSquat], [4=squat], [5=deadRight], [6=fireRight], [7=deadLeft], [8=fireLeft]
 			function setUser(idUser, nbUsers, state) {
@@ -111,10 +187,14 @@
 			    user.interactive = true;
 			    user.tint = 0xffffff;
 			    user.alpha = 1;
+	    		user.anchor.set(0.5);
 			    user.scale = new PIXI.Point(0.5, 0.5);
-			    var widthByUser = w / (nbUsers + 1);
-			    user.position.x = widthByUser * idUser;
-			    user.position.y = h * 0.5;
+			    if (renderLine) {
+			    	positionLine(nbUsers, idUser, user, heightPosition);
+				} else {
+			    	positionCircle(nbUsers, idUser, user, sizeCircle);
+				}
+			    stateUsers[idUser] = state;
 			    users[idUser] = user;
 			    gameContainer.addChild(user);
 		    }
@@ -131,6 +211,7 @@
 			    user.interactive = true;
 			    user.tint = 0xffffff;
 			    user.alpha = 1;
+	    		user.anchor.set(0.5);
 			    user.scale = new PIXI.Point(0.5, 0.5);
 			    user.position.x = w * 0.8;
 			    user.position.y = h * 0.1;
@@ -149,6 +230,7 @@
 			    user.interactive = true;
 			    user.tint = 0xffffff;
 			    user.alpha = 1;
+	    		user.anchor.set(0.5);
 			    user.scale = new PIXI.Point(0.5, 0.5);
 			    user.position.x = w * 0.8;
 			    user.position.y = h * 0.1;
@@ -165,37 +247,52 @@
 		    	gameContainer.addChild(cactus2);
 		    	gameContainer.addChild(cactus3);
  				users = [null, null, null, null, null, null, null, null, null, null];
+ 				if (!partyRunning) {
+ 					gameContainer.addChild(timerWaiting);
+ 				}
+				setMe(parseInt($('#idUser').val()), parseInt($('#nbUsers').val()));
 		    	for (var i = 0; i < nbUsers; ++i) {
 		    		setUser(i, nbUsers, 1);
 		    	}
 		    }
 
-		    function partyIsRunning(active) {
-		    	if (active) {
-					gameContainer.addChild(timerText);
-				} else {
-					gameContainer.removeChild(timerText);
-				}
-		    }
-
-		    function timerInfos(time) {
-		    	var valueTime = parseInt(time);
-		    	if (valueTime > 0) {
-		    		timerText.text = valueTime;
-		    	} else {
-		    		timerText.text = "Let's Go!";
+		    function resetUsers(nbUsers) {
+	    		stage.removeChild(gameContainer);
+	    		gameContainer = new PIXI.Container();
+ 				stage.addChild(gameContainer);cactus1
+		    	gameContainer.addChild(infos);
+		    	gameContainer.addChild(cactus1);
+		    	gameContainer.addChild(cactus2);
+		    	gameContainer.addChild(cactus3);
+ 				users = [null, null, null, null, null, null, null, null, null, null];
+ 				if (!partyRunning) {
+ 					gameContainer.addChild(timerWaiting);
+ 				}
+				setMe(parseInt($('#idUser').val()), parseInt($('#nbUsers').val()));
+		    	for (var i = 0; i < nbUsers; ++i) {
+		    		setUser(i, nbUsers, stateUsers[i]);
 		    	}
 		    }
 
+		    function partyIsRunning() {
+		    	partyRunning = true;
+				gameContainer.removeChild(timerWaiting);
+				gameContainer.removeChild(timerWaitingPlayersText);
+		    }
+
+		    function timerWaitingPlayersRemove() {
+				timerWaitingPlayersText.isDisplaying = false;
+				gameContainer.removeChild(timerWaitingPlayersText);
+		    }
+
 		    function timerWaitingPlayersInfos(time) {
-		    	var valueTime = parseInt(time);
-		    	if (valueTime > 0) {
-		    		timerWaitingPlayersText.text = 'Waiting Players ' + valueTime + 's';
+		    	valueTimer = parseInt(time);
+		    	if (valueTimer > 0) {
+		    		timerWaitingPlayersText.text = 'Game start in ' + valueTimer + 's';
 		    		if (!timerWaitingPlayersText.isDisplaying) {
 						gameContainer.addChild(timerWaitingPlayersText);
+						timerWaitingPlayersText.isDisplaying = true;
 					}
-		    	} else {
-					gameContainer.removeChild(timerWaitingPlayersText);
 		    	}
 		    }
 
@@ -204,11 +301,14 @@
 		    }
 
 		    function winner(idUser, nbUsers) {
-			    var widthByUser = $(document.body).width() / (nbUsers + 1);
-			    light1.position.x = widthByUser * idUser - 387 / 4;
-			    light1.position.y = h * 0.5 - 388 / 4;
+			    if (renderLine) {
+			    	positionLine(nbUsers, idUser, light1, heightPosition);
+				} else {
+			    	positionCircle(nbUsers, idUser, light1, sizeCircle);
+				}
 				gameContainer.addChild(light1);
 				setUser(idUser, nbUsers, 1);
+				idWinner = idUser;
 		    }
 		</script>
 		<script>
@@ -239,11 +339,9 @@
 			socket.on('ping', function(info) {
 				socket.emit('pong');
 			});
-			socket.on('idRoom', function(idRoom) {
-				$('#idRoom').val(idRoom);
-			});
-			socket.on('idUser', function(idUser) {
-				$('#idUser').val(idUser);
+			socket.on('idUser', function(info) {
+				$('#idUser').val(info.idUser);
+				$('#nbUsers').val(info.nbUsers);
 			});
 			socket.on('nbUsers', function(info) {
 				$('#nbUsers').val(info.userInfos);
@@ -274,12 +372,14 @@
 					head = null;
 				}
 				setSherif(2);
+				playShoot();
 				window.setTimeout(function() {
 					setUser(info.userInfos, parseInt($('#nbUsers').val()), 2)
 				}, 300);
 			});
 			socket.on('fireRight', function(info) {
 				setUser(info.userInfos, parseInt($('#nbUsers').val()), 6);
+				playShoot();
 			});
 			socket.on('deadLeft', function(info) {
 				setUser(info.userInfos, parseInt($('#nbUsers').val()), 7);
@@ -288,31 +388,37 @@
 					head = null;
 				}
 				setSherif(2);
+				playShoot();
 				window.setTimeout(function() {
 					setUser(info.userInfos, parseInt($('#nbUsers').val()), 2)
 				}, 300);
 			});
 			socket.on('fireLeft', function(info) {
 				setUser(info.userInfos, parseInt($('#nbUsers').val()), 8);
+				playShoot();
 			});
 			socket.on('start', function(info) {
-				partyIsRunning(info.userInfos);
-			});
-			socket.on('timer', function(info) {
-				timerInfos(info.userInfos);
+				partyIsRunning();
 			});
 			socket.on('timerWaitingPlayers', function(info) {
 				timerWaitingPlayersInfos(info.userInfos);
+			});
+			socket.on('timerWaitingRemove', function(info) {
+				timerWaitingPlayersRemove();
 			});
 			socket.on('wanted', function(info) {
 				if (currentStateSherif == 2) {
 					window.setTimeout(function() {
 						setSherif(1);
 						addHead(info.userInfos);
-					}, 500);
+						var myAudio = new Audio('Snd_Wanted.wav'); 
+						myAudio.play();
+					}, 300);
 				} else {
 					setSherif(1);
 					addHead(info.userInfos);
+					var myAudio = new Audio('Snd_Wanted.wav'); 
+					myAudio.play();
 				}
 			});
 			socket.on('winner', function(info) {
