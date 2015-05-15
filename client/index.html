@@ -35,8 +35,8 @@
 			var DEFAULT_H = 720;
 			var heightPosition = h * 0.5;
 			var heightArrow = h * 0.7;
-			var sizeCircle = Math.min(w/3.5, h/3.5);
-			var sizeCircleArrow = Math.min(w/2.5, h/2.5);
+			var sizeCircle = Math.min(w/4.5, h/4.5);
+			var sizeCircleArrow = Math.min(w/3, h/3);
 			var partyRunning = false;
 			var valueTimer = 5; // maxTimeWaiting dans server.js
 
@@ -51,16 +51,10 @@
 	    	light1.anchor.set(0.5);
 			var cactus1 = PIXI.Sprite.fromImage('Cactus1.png');
 	    	cactus1.anchor.set(0.5);
-		    cactus1.position.x = w / 4;
-		    cactus1.position.y = h * 3 / 4;
 			var cactus2 = PIXI.Sprite.fromImage('Cactus2.png');
 	    	cactus2.anchor.set(0.5);
-		    cactus2.position.x = w * 3 / 4;
-		    cactus2.position.y = h * 3 / 4;
 			var cactus3 = PIXI.Sprite.fromImage('Cactus2.png');
 	    	cactus3.anchor.set(0.5);
-		    cactus3.position.x = w * 2.5 / 4;
-		    cactus3.position.y = h * 0.7 / 4;
 			var arrow = PIXI.Sprite.fromImage('Arrow.png');
 	    	arrow.anchor.set(0.5);
 
@@ -85,17 +79,24 @@
 			// Text
 	    	var infos = new PIXI.Text("F5 : New Game\nRigth Arrow : Right Shoot\nLeft Arrow : Left Shoot\nDown Arrow : Dodge Shoot", {font: "bold 20px Podkova", fill: "#cc00ff", align: "center", stroke: "#FFFFFF", strokeThickness: 6});
 	    	infos.anchor.set(0.5);
-		    infos.position.x = w * 0.1;
-		    infos.position.y = h * 0.1;
 	    	var timerWaiting = new PIXI.Text("Waiting Players", {font: "bold 25px Podkova", fill: "#cc00ff", align: "center", stroke: "#FFFFFF", strokeThickness: 6});
 	    	timerWaiting.anchor.set(0.5);
-		    timerWaiting.position.x = w * 0.1;
-		    timerWaiting.position.y = h * 0.2;
 	    	var timerWaitingPlayersText = new PIXI.Text("Game start in 5s", {font: "bold 25px Podkova", fill: "#cc00ff", align: "center", stroke: "#FFFFFF", strokeThickness: 6});
 	    	timerWaitingPlayersText.anchor.set(0.5);
+		    timerWaitingPlayersText.isDisplaying = false;
+
+		    cactus1.position.x = w / 4;
+		    cactus1.position.y = h * 3 / 4;
+		    cactus2.position.x = w * 3 / 4;
+		    cactus2.position.y = h * 3 / 4;
+		    cactus3.position.x = w * 2.5 / 4;
+		    cactus3.position.y = h * 0.7 / 4;
+		    infos.position.x = w * 0.1;
+		    infos.position.y = h * 0.1;
+		    timerWaiting.position.x = w * 0.1;
+		    timerWaiting.position.y = h * 0.25;
 		    timerWaitingPlayersText.position.x = w * 0.1;
 		    timerWaitingPlayersText.position.y = h * 0.3;
-		    timerWaitingPlayersText.isDisplaying = false;
 
 			//update renderer
 			animate();
@@ -124,10 +125,23 @@
 				stage.position.x = 0;
 				stage.position.y = 0;
 
+			    cactus1.position.x = w / 4;
+			    cactus1.position.y = h * 3 / 4;
+			    cactus2.position.x = w * 3 / 4;
+			    cactus2.position.y = h * 3 / 4;
+			    cactus3.position.x = w * 2.5 / 4;
+			    cactus3.position.y = h * 0.7 / 4;
+			    infos.position.x = w * 0.1;
+			    infos.position.y = h * 0.1;
+			    timerWaiting.position.x = w * 0.1;
+			    timerWaiting.position.y = h * 0.25;
+			    timerWaitingPlayersText.position.x = w * 0.1;
+			    timerWaitingPlayersText.position.y = h * 0.3;
+
 				heightPosition = h * 0.5;
 				heightArrow = h * 0.7;
-				sizeCircle = Math.min(w/3.5, h/3.5);
-				sizeCircleArrow = Math.min(w/2.5, h/2.5);
+				sizeCircle = Math.min(w/4.5, h/4.5);
+				sizeCircleArrow = Math.min(w/3, h/3);
 
  				if (assetsReadyFlag) {
 					resetUsers(parseInt($('#nbUsers').val()));
@@ -162,8 +176,8 @@
 
 		    function positionCircle(nbUsers, idUser, sprite, parSizeCircle) {
 			    var angleByUser = (Math.PI * 2) / nbUsers;
-			    sprite.position.x = Math.sin(angleByUser * idUser) * parSizeCircle + w/2;
-			    sprite.position.y = -Math.cos(angleByUser * idUser) * parSizeCircle + h/2;
+			    sprite.position.x = Math.sin(angleByUser * idUser) * parSizeCircle + w/3;
+			    sprite.position.y = -Math.cos(angleByUser * idUser) * parSizeCircle + h*2/5;
 			    sprite.rotation = angleByUser * idUser;
 		    }
 
@@ -213,7 +227,7 @@
 			    user.alpha = 1;
 	    		user.anchor.set(0.5);
 			    user.scale = new PIXI.Point(0.5, 0.5);
-			    user.position.x = w * 0.8;
+			    user.position.x = w * 0.73;
 			    user.position.y = h * 0.1;
 			    sherif = user;
 			    gameContainer.addChild(user);
@@ -232,7 +246,7 @@
 			    user.alpha = 1;
 	    		user.anchor.set(0.5);
 			    user.scale = new PIXI.Point(0.5, 0.5);
-			    user.position.x = w * 0.8;
+			    user.position.x = w * 0.73;
 			    user.position.y = h * 0.1;
 			    head = user;
 			    gameContainer.addChild(user);
@@ -366,22 +380,6 @@
 				setUser(info.userInfos, parseInt($('#nbUsers').val()), 4);
 			});
 			socket.on('deadRight', function(info) {
-				setUser(info.userInfos, parseInt($('#nbUsers').val()), 5);
-				if (head != null) {
-					gameContainer.removeChild(head);
-					head = null;
-				}
-				setSherif(2);
-				playShoot();
-				window.setTimeout(function() {
-					setUser(info.userInfos, parseInt($('#nbUsers').val()), 2)
-				}, 300);
-			});
-			socket.on('fireRight', function(info) {
-				setUser(info.userInfos, parseInt($('#nbUsers').val()), 6);
-				playShoot();
-			});
-			socket.on('deadLeft', function(info) {
 				setUser(info.userInfos, parseInt($('#nbUsers').val()), 7);
 				if (head != null) {
 					gameContainer.removeChild(head);
@@ -393,8 +391,24 @@
 					setUser(info.userInfos, parseInt($('#nbUsers').val()), 2)
 				}, 300);
 			});
-			socket.on('fireLeft', function(info) {
+			socket.on('fireRight', function(info) {
 				setUser(info.userInfos, parseInt($('#nbUsers').val()), 8);
+				playShoot();
+			});
+			socket.on('deadLeft', function(info) {
+				setUser(info.userInfos, parseInt($('#nbUsers').val()), 5);
+				if (head != null) {
+					gameContainer.removeChild(head);
+					head = null;
+				}
+				setSherif(2);
+				playShoot();
+				window.setTimeout(function() {
+					setUser(info.userInfos, parseInt($('#nbUsers').val()), 2)
+				}, 300);
+			});
+			socket.on('fireLeft', function(info) {
+				setUser(info.userInfos, parseInt($('#nbUsers').val()), 6);
 				playShoot();
 			});
 			socket.on('start', function(info) {

@@ -2,16 +2,17 @@ var express = require('express');
 var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
+var port = 80;
 
-http.listen(process.env.PORT || 3000, function() {
-  console.log('listening on *:' + process.env.PORT + ' or *:3000');
+http.listen(process.env.PORT || port, function() {
+  console.log('listening on *:' + process.env.PORT + ' or *:' + port);
 });
 
 app.use(express.static('client'));
 
 var timerUpdate = 200;
 var timerPing = 500;
-var maxTimePing = 3000;
+var maxTimePing = 10000;
 var maxUsersByRoom = 10;
 var minUserForGame = 3;
 var maxTimeWaiting = 5000;
@@ -118,7 +119,7 @@ function updatePing(socket) {
         if (!room.deads[socket.idUser]) {
           room.deads[socket.idUser] = true;
           room.sockets[socket.idUser] = null;
-          console.log('disconnect dead ' + numberUsers(socket.idRoom) + ' users in room ' + socket.idRoom);
+          console.log('disconnect ping dead ' + numberUsers(socket.idRoom) + ' users in room ' + socket.idRoom);
           newDead(socket.idRoom, socket.idUser, 0);
         }
       }
@@ -134,13 +135,13 @@ io.on('connection', function(socket) {
   socket.idUser = -1;
   socket.previousDate = new Date();
 
-  socket.intervalId = setInterval(function() {
+  /*socket.intervalId = setInterval(function() {
     updatePing(socket);
   }, timerPing);
 
   socket.on('pong', function() {
     socket.previousDate = new Date();
-  });
+  });*/
 
   socket.on('addUser', function() {
     var idRoom = rooms.length - 1;
@@ -164,7 +165,7 @@ io.on('connection', function(socket) {
 
     socket.idUser = idUser;
     socket.idRoom = idRoom;
-    console.log('connect ' + numberUsers(socket.idRoom) + ' users in room ' + socket.idRoom);
+    console.log('connect ' + idUser + ' ' + numberUsers(socket.idRoom) + ' users in room ' + socket.idRoom);
     socket.emit('idUser', {
       nbUsers : numberUsers(socket.idRoom),
       idUser : socket.idUser
@@ -188,53 +189,57 @@ io.on('connection', function(socket) {
   });
 
   socket.on('keyDown', function(id) {
-    var room = rooms[socket.idRoom];
-    if (!room.deads[socket.idUser]) {
-      if (id == 2) { // Squat
-        if (room.userWanted == socket.idUser) {
-          room.squats[socket.idUser] = true;
-          sendMessage(socket.idRoom, 'squat', socket.idUser, true);
-        } else {
-          sendMessage(socket.idRoom, 'missSquat', socket.idUser, true);
-        }
-      } else { // Fire
-        if (room.userWanted == -1) {
-          newDead(socket.idRoom, socket.idUser, id);
-        } else {
+    if (socket.idRoom != -1) {
+      var room = rooms[socket.idRoom];
+      if (!room.deads[socket.idUser]) {
+        if (id == 2) { // Squat
           if (room.userWanted == socket.idUser) {
+            room.squats[socket.idUser] = true;
+            sendMessage(socket.idRoom, 'squat', socket.idUser, true);
+          } else {
+            sendMessage(socket.idRoom, 'missSquat', socket.idUser, true);
+          }
+        } else { // Fire
+          if (room.userWanted == -1) {
             newDead(socket.idRoom, socket.idUser, id);
           } else {
-            var idUserFind = nextUser(socket.idRoom, socket.idUser, id == 1);
-            if (idUserFind != -1) {
-              if (idUserFind == room.userWanted) {
-                if (!room.squats[room.userWanted]) {
-                  newDead(socket.idRoom, room.userWanted, 0);
+            if (room.userWanted == socket.idUser) {
+              newDead(socket.idRoom, socket.idUser, id);
+            } else {
+              var idUserFind = nextUser(socket.idRoom, socket.idUser, id == 3);
+              if (idUserFind != -1) {
+                if (idUserFind == room.userWanted) {
+                  if (!room.squats[room.userWanted]) {
+                    newDead(socket.idRoom, room.userWanted, 0);
+                  } else {
+                    var idUserFind = nextUser(socket.idRoom, room.userWanted, id == 3);
+                    newDead(socket.idRoom, idUserFind, 0);
+                  }
+                  newFire(socket.idRoom, socket.idUser, id);
+                  sendMessage(socket.idRoom, 'delayStay', socket.idUser, true);
                 } else {
-                  var idUserFind = nextUser(socket.idRoom, room.userWanted, id == 1);
-                  newDead(socket.idRoom, idUserFind, 0);
+                  newDead(socket.idRoom, socket.idUser, id);
                 }
-                newFire(socket.idRoom, socket.idUser, id);
-                sendMessage(socket.idRoom, 'delayStay', socket.idUser, true);
-              } else {
-                newDead(socket.idRoom, socket.idUser, id);
               }
             }
+            room.userWanted = -1;
           }
-          room.userWanted = -1;
         }
       }
     }
   });
 
   socket.on('keyUp', function(id) {
-    var room = rooms[socket.idRoom];
-    if (!room.deads[socket.idUser]) {
-      if (id == 2) { // Squat
-        if (socket.idUser == room.userWanted) {
-          room.squats[socket.idUser] = false;
-          sendMessage(socket.idRoom, 'stay', socket.idUser, true);
-        } else {
-          sendMessage(socket.idRoom, 'delayStay', socket.idUser, true);
+    if (socket.idRoom != -1) {
+      var room = rooms[socket.idRoom];
+      if (!room.deads[socket.idUser]) {
+        if (id == 2) { // Squat
+          if (socket.idUser == room.userWanted) {
+            room.squats[socket.idUser] = false;
+            sendMessage(socket.idRoom, 'stay', socket.idUser, true);
+          } else {
+            sendMessage(socket.idRoom, 'delayStay', socket.idUser, true);
+          }
         }
       }
     }
