@@ -15,7 +15,7 @@ var timerPing = 500;
 var maxTimePing = 10000;
 var maxUsersByRoom = 10;
 var minUserForGame = 3;
-var maxTimeWaiting = 5000;
+var maxTimeWaiting = 10000;
 
 var rooms = [];
 
@@ -26,6 +26,7 @@ function newRoom(idRoom) {
     rooms[idRoom].sockets = [];
     rooms[idRoom].isComplete = false;
     rooms[idRoom].dateCreation = new Date();
+    rooms[idRoom].timerIsDisable = true;
     rooms[idRoom].isLaunching = false;
     rooms[idRoom].dateGameStart = null;
     rooms[idRoom].userWanted = -1;
@@ -98,7 +99,7 @@ function numberUsersAlive(idRoom) {
 
 function sendMessage(idRoom, idMessage, userInfos, log) {
   if (log) {
-    console.log(idMessage + ' ' + userInfos + ' in room ' + idRoom);
+    console.log(new Date() + ' ' + idMessage + ' ' + userInfos + ' in room ' + idRoom);
   }
   var room = rooms[idRoom];
   for (var i = 0; i < room.sockets.length; i++) {
@@ -119,7 +120,7 @@ function updatePing(socket) {
         if (!room.deads[socket.idUser]) {
           room.deads[socket.idUser] = true;
           room.sockets[socket.idUser] = null;
-          console.log('disconnect ping dead ' + numberUsers(socket.idRoom) + ' users in room ' + socket.idRoom);
+          console.log(new Date() + ' disconnect ping dead ' + numberUsers(socket.idRoom) + ' users in room ' + socket.idRoom);
           newDead(socket.idRoom, socket.idUser, 0);
         }
       }
@@ -155,17 +156,19 @@ io.on('connection', function(socket) {
         idUser = i;
       }
     }
+    var room = rooms[idRoom];
     if (idUser == -1)
-      idUser = rooms[idRoom].sockets.length;
-    rooms[idRoom].deads[idUser] = false;
-    rooms[idRoom].squats[idUser] = false;
-    rooms[idRoom].sockets[idUser] = socket;
+      idUser = room.sockets.length;
+    room.deads[idUser] = false;
+    room.squats[idUser] = false;
+    room.sockets[idUser] = socket;
     if (numberUsers(idRoom) == maxUsersByRoom)
-      rooms[idRoom].isComplete = true;
+      room.isComplete = true;
+    room.dateCreation = new Date();
 
     socket.idUser = idUser;
     socket.idRoom = idRoom;
-    console.log('connect ' + idUser + ' ' + numberUsers(socket.idRoom) + ' users in room ' + socket.idRoom);
+    console.log(new Date() + ' connect ' + socket.idUser + ' ' + numberUsers(socket.idRoom) + ' users in room ' + socket.idRoom);
     socket.emit('idUser', {
       nbUsers : numberUsers(socket.idRoom),
       idUser : socket.idUser
@@ -179,10 +182,10 @@ io.on('connection', function(socket) {
       room.deads[socket.idUser] = true;
       room.sockets[socket.idUser] = null;
       if (room.isLaunching) {
-        console.log('disconnect dead ' + numberUsers(socket.idRoom) + ' users in room ' + socket.idRoom);
+        console.log(new Date() + ' disconnect dead ' + numberUsers(socket.idRoom) + ' users in room ' + socket.idRoom);
         newDead(socket.idRoom, socket.idUser, 0);
       } else {
-        console.log('disconnect ' + numberUsers(socket.idRoom) + ' users in room ' + socket.idRoom);
+        console.log(new Date() + ' disconnect ' + numberUsers(socket.idRoom) + ' users in room ' + socket.idRoom);
         sendMessage(socket.idRoom, 'nbUsers', numberUsers(socket.idRoom), false);
       }
     }
@@ -206,13 +209,13 @@ io.on('connection', function(socket) {
             if (room.userWanted == socket.idUser) {
               newDead(socket.idRoom, socket.idUser, id);
             } else {
-              var idUserFind = nextUser(socket.idRoom, socket.idUser, id == 3);
+              var idUserFind = nextUser(socket.idRoom, socket.idUser, id == 1);
               if (idUserFind != -1) {
                 if (idUserFind == room.userWanted) {
                   if (!room.squats[room.userWanted]) {
                     newDead(socket.idRoom, room.userWanted, 0);
                   } else {
-                    var idUserFind = nextUser(socket.idRoom, room.userWanted, id == 3);
+                    var idUserFind = nextUser(socket.idRoom, room.userWanted, id == 1);
                     newDead(socket.idRoom, idUserFind, 0);
                   }
                   newFire(socket.idRoom, socket.idUser, id);
@@ -275,13 +278,17 @@ updateRoom = function() {
       // Start the room
       var timePassed = maxTimeWaiting - (currentDate - room.dateCreation);
       if (numberUsers(i) >= minUserForGame) {
+        room.timerIsDisable = false;
         sendMessage(i, 'timerWaitingPlayers', timePassed / 1000, false);
       } else {
         room.dateCreation = new Date();
-        sendMessage(i, 'timerWaitingRemove', "", false);
+        if (!room.timerIsDisable) {
+          sendMessage(i, 'timerWaitingRemove', "", false);
+        }
+        room.timerIsDisable = true;
       }
       if (room.isComplete || (numberUsers(i) >= minUserForGame && timePassed <= 0)) {
-        console.log('room ' + i + ' is launching');
+        console.log(new Date() + ' room ' + i + ' is launching');
         room.isLaunching = true;
         room.dateGameStart = currentDate;
         sendMessage(i, 'start', "", true);
