@@ -362,10 +362,6 @@
 		    	}
 		    }
 
-		    function registerUser() {
-		    	socket.emit('addUser');
-		    }
-
 		    function winner(idUser, nbUsers) {
  				var idMe = parseInt($('#idUser').val());
 			    if (renderLine) {
@@ -383,6 +379,13 @@
 				var myAudio = new Audio('Snd_Shoot' + idShoot +'.wav'); 
 				myAudio.play();
 			}
+
+
+			// Events
+
+		    function registerUser() {
+		    	socket.emit('addUser');
+		    }
 
 			$('#renderer').on("mousedown", function(event) {
 				socket.emit('keyDown', event.which);
