@@ -53,6 +53,16 @@ function newFire(idRoom, idUser, idKey) {
   sendMessage(idRoom, fire, idUser, true);
 }
 
+function updateNbUsers(idRoom) {
+  var room = rooms[idRoom];
+  sendMessage(idRoom, 'nbUsers', numberUsers(idRoom), false);
+  for (var i = 0; i < room.sockets.length; ++i) {
+    if (room.sockets[i] != null && room.deads[i]) {
+      newDead(idRoom, i, 0);
+    }
+  }
+}
+
 function nextUser(idRoom, idUser, left) {
   var room = rooms[idRoom];
   if (left) {
@@ -115,6 +125,7 @@ function sendMessage(idRoom, idMessage, userInfos, log) {
 
 function updatePing(socket) {
     if (new Date() - socket.previousDate > maxTimePing) {
+      socket.disconnect();
       if (socket.idRoom != -1) {
         var room = rooms[socket.idRoom];
         if (!room.deads[socket.idUser]) {
@@ -125,7 +136,6 @@ function updatePing(socket) {
         }
       }
       clearInterval(socket.intervalId);
-      socket.disconnect();
     } else {
       socket.emit('ping');
     }
@@ -150,13 +160,14 @@ io.on('connection', function(socket) {
       ++idRoom;
       newRoom(idRoom);
     }
+    var room = rooms[idRoom];
     var idUser = -1;
-    for (var i = 0; i < rooms[idRoom].sockets.length; ++i) {
-      if (rooms[idRoom].sockets[i] == null) {
+    for (var i = 0; i < room.sockets.length; ++i) {
+      if (room.sockets[i] == null) {
         idUser = i;
+        break;
       }
     }
-    var room = rooms[idRoom];
     if (idUser == -1)
       idUser = room.sockets.length;
     room.deads[idUser] = false;
@@ -173,7 +184,7 @@ io.on('connection', function(socket) {
       nbUsers : numberUsers(socket.idRoom),
       idUser : socket.idUser
     });
-    sendMessage(socket.idRoom, 'nbUsers', numberUsers(socket.idRoom), false);
+    updateNbUsers(socket.idRoom);
   });
 
   socket.on('disconnect', function() {
@@ -186,7 +197,7 @@ io.on('connection', function(socket) {
         newDead(socket.idRoom, socket.idUser, 0);
       } else {
         console.log(new Date() + ' disconnect ' + numberUsers(socket.idRoom) + ' users in room ' + socket.idRoom);
-        sendMessage(socket.idRoom, 'nbUsers', numberUsers(socket.idRoom), false);
+        updateNbUsers(socket.idRoom);
       }
     }
   });

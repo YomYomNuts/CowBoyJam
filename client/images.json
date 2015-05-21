@@ -680,7 +680,7 @@
 },
 "8_5.png" :
 {
-	"frame": {"x":2230,"y":1959,"w":370,"h":325},
+	"frame": {"x":2972,"y":1959,"w":370,"h":325},
 	"rotated": false,
 	"trimmed": false,
 	"spriteSourceSize": {"x":0,"y":0,"w":370,"h":325},
@@ -720,7 +720,7 @@
 },
 "sherif0.png" :
 {
-	"frame": {"x":4,"y":3,"w":370,"h":325},
+	"frame": {"x":4,"y":4,"w":370,"h":325},
 	"rotated": false,
 	"trimmed": false,
 	"spriteSourceSize": {"x":0,"y":0,"w":370,"h":325},
@@ -728,7 +728,7 @@
 },
 "sherif1.png" :
 {
-	"frame": {"x":377,"y":3,"w":370,"h":325},
+	"frame": {"x":377,"y":4,"w":370,"h":325},
 	"rotated": false,
 	"trimmed": false,
 	"spriteSourceSize": {"x":0,"y":0,"w":370,"h":325},
@@ -736,7 +736,7 @@
 },
 "sherif2.png" :
 {
-	"frame": {"x":746,"y":3,"w":370,"h":325},
+	"frame": {"x":746,"y":4,"w":370,"h":325},
 	"rotated": false,
 	"trimmed": false,
 	"spriteSourceSize": {"x":0,"y":0,"w":370,"h":325},
